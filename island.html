@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ilha</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container text-center mt-5">
+    <!-- Banner da Ilha -->
+    <div id="island-banner" class="mb-4">
+      <img id="banner-image" src="" alt="Banner da Ilha" class="img-fluid rounded" style="max-height: 300px;">
+    </div>
+
+    <!-- Título e Descrição -->
+    <h1 id="island-name">Carregando...</h1>
+    <p id="island-description" class="lead">Descrição da ilha.</p>
+
+    <!-- Seção de Puzzles -->
+    <div id="puzzle-section" class="mt-4">
+      <h2>Puzzles:</h2>
+      <ul id="puzzle-list" class="list-group"></ul>
+    </div>
+
+    <!-- Botão para Voltar ao Mapa -->
+    <a href="map.html" class="btn btn-secondary btn-lg mt-4">Voltar ao Mapa</a>
+  </div>
+
+  <script>
+    // Obter o ID da ilha da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const islandId = urlParams.get('id');
+
+    if (!islandId) {
+      console.error('ID da ilha não encontrado na URL.');
+    } else {
+      console.log(`Buscando dados da ilha em: /api/islands/${islandId}`);
+      // Buscar os dados da ilha do backend
+      fetch(`http://localhost:5000/api/islands/${islandId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao carregar a ilha.');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Preencher o banner
+          console.log('Ilha retornada pelo backend:', data);
+          const bannerImage = document.getElementById('banner-image');
+          if (data.banner && data.banner.url) {
+            console.log('Banner URL encontrada:', data.banner.url); // Verifica se o campo "url" existe
+            bannerImage.src = `http://localhost:5000${data.banner.url}`; // Adiciona o host completo
+            bannerImage.style.display = 'block';
+          } else {
+            console.log('Banner não encontrado ou URL inválida.'); // Mensagem de erro caso o banner não seja exibido
+            console.log('Banner URL é:', data.banner.url); // Verifica se o campo "url" existe
+            bannerImage.style.display = 'none'; // Oculta o banner se não houver
+          }
+
+          // Preencher o nome e a descrição da ilha
+          document.getElementById('island-name').textContent = data.name;
+          document.getElementById('island-description').textContent = data.description;
+
+          // Verificar se há puzzles
+          const puzzleList = document.getElementById('puzzle-list');
+          if (data.puzzles && data.puzzles.length > 0) {
+            data.puzzles.forEach(puzzle => {
+              const li = document.createElement('li');
+              li.className = 'list-group-item d-flex align-items-center';
+
+              // Criar um link para a página de detalhes do puzzle
+              li.innerHTML = `
+                <a href="puzzle-details.html?islandId=${data._id}&puzzleId=${puzzle._id}" class="text-decoration-none text-dark">
+                  <img src="http://localhost:5000${puzzle.icon?.url || ''}" alt="${puzzle.title} Icon" width="50" class="me-3">
+                  <div>
+                    <strong>${puzzle.title}</strong><br>
+                    ${puzzle.description}
+                  </div>
+                </a>
+              `;
+              puzzleList.appendChild(li);
+            });
+          } else {
+            puzzleList.innerHTML = '<li class="list-group-item">Nenhum puzzle disponível para esta ilha.</li>';
+          }
+        })
+        .catch(error => {
+          console.error('Erro ao carregar a ilha:', error);
+        });
+    }
+  </script>
+</body>
+</html>

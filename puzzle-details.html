@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes do Puzzle</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container text-center mt-5">
+    <!-- Banner da Ilha -->
+    <div id="island-banner" class="mb-4">
+      <img id="banner-image" src="" alt="Banner da Ilha" class="img-fluid rounded" style="max-height: 300px;">
+    </div>
+
+    <!-- Título e Descrição da Ilha -->
+    <h1 id="island-name">Carregando...</h1>
+    <p id="island-description" class="lead">Descrição da ilha.</p>
+
+    <!-- Detalhes do Puzzle -->
+    <div id="puzzle-details" class="mt-4">
+      <h2 id="puzzle-title">Carregando...</h2>
+      <div id="puzzle-steps">
+        <h3>Passo <span id="current-step">1</span> de <span id="total-steps"></span></h3>
+        <div id="step-content">
+          <!-- Conteúdo do passo será carregado aqui -->
+        </div>
+        <div class="d-flex justify-content-between mt-3">
+          <button id="prev-step" class="btn btn-secondary" disabled>Voltar</button>
+          <button id="next-step" class="btn btn-primary">Avançar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão para Voltar à Página da Ilha -->
+    <a href="island.html" class="btn btn-secondary btn-lg mt-4">Voltar à Ilha</a>
+  </div>
+
+  <script>
+    // Variáveis globais
+    let currentStepIndex = 0;
+    let steps = [];
+    const BASE_URL = 'http://localhost:5000'; // URL base do backend
+
+    // Função para carregar um passo específico
+    function loadStep(index) {
+        const step = steps[index];
+        const stepContent = document.getElementById('step-content');
+        stepContent.innerHTML = ''; // Limpa o conteúdo anterior
+
+        // Exibir personagens (se houver)
+        if (step.characters && step.characters.length > 0) {
+            const charactersDiv = document.createElement('div');
+            charactersDiv.className = 'd-flex justify-content-center mb-3';
+            step.characters.forEach(character => {
+            const characterElement = document.createElement('div');
+            characterElement.className = `text-center ${character.position === 'left' ? 'me-3' : 'ms-3'}`;
+
+            // Construir a URL da imagem
+            const imageUrl = `${BASE_URL}${character.image.url}`; // Usa o campo url do modelo Image
+
+            // Criar elemento de imagem
+            characterElement.innerHTML = `
+                <img src="${imageUrl}" alt="${character.label || ''}" width="100" class="rounded-circle">
+                <div>${character.label || ''}</div>
+            `;
+            charactersDiv.appendChild(characterElement);
+            });
+            stepContent.appendChild(charactersDiv);
+        }
+
+        // Exibir texto principal
+        const bodyElement = document.createElement('p');
+        bodyElement.textContent = step.body;
+        stepContent.appendChild(bodyElement);
+
+        // Atualizar botões de navegação
+        document.getElementById('current-step').textContent = index + 1;
+        document.getElementById('prev-step').disabled = index === 0;
+        document.getElementById('next-step').disabled = index === steps.length - 1;
+    }
+
+    // Obter o ID da ilha e do puzzle da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const islandId = urlParams.get('islandId');
+    const puzzleId = urlParams.get('puzzleId');
+
+    if (!islandId || !puzzleId) {
+    console.error('ID da ilha ou do puzzle não encontrado na URL.');
+    } else {
+    console.log(`Buscando dados da ilha em: /api/islands/${islandId}`);
+    console.log(`Buscando dados do puzzle em: /api/puzzle-details/${puzzleId}`);
+
+    // Buscar os dados da ilha do backend
+    fetch(`http://localhost:5000/api/islands/${islandId}`)
+        .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro ao carregar a ilha.');
+        }
+        return response.json();
+        })
+        .then(islandData => {
+        // Preencher o banner, título e descrição da ilha
+        const bannerImage = document.getElementById('banner-image');
+        if (islandData.banner && islandData.banner.url) {
+            bannerImage.src = `http://localhost:5000${islandData.banner.url}`;
+            bannerImage.style.display = 'block';
+        } else {
+            bannerImage.style.display = 'none'; // Oculta o banner se não houver
+        }
+
+        document.getElementById('island-name').textContent = islandData.name;
+        document.getElementById('island-description').textContent = islandData.description;
+
+        // Buscar os dados do puzzle do backend
+        return fetch(`http://localhost:5000/api/puzzle-details/${puzzleId}`);
+        })
+        .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro ao carregar o puzzle.');
+        }
+        return response.json();
+        })
+        .then(puzzleData => {
+        // Preencher os detalhes do puzzle
+        document.getElementById('puzzle-title').textContent = puzzleData.title;
+
+        // Verificar se o campo steps existe
+        if (puzzleData.steps && puzzleData.steps.length > 0) {
+            steps = puzzleData.steps;
+            document.getElementById('total-steps').textContent = steps.length;
+            loadStep(currentStepIndex); // Carrega o primeiro passo
+        } else {
+            console.error('Erro: Os passos do puzzle não foram encontrados.');
+            document.getElementById('step-content').innerHTML = '<p>Não há passos disponíveis para este puzzle.</p>';
+        }
+        })
+        .catch(error => {
+        console.error('Erro ao carregar os dados:', error);
+        });
+    }
+
+    // Botão "Voltar"
+    document.getElementById('prev-step').addEventListener('click', () => {
+      if (currentStepIndex > 0) {
+        currentStepIndex--;
+        loadStep(currentStepIndex);
+      }
+    });
+
+    // Botão "Avançar"
+    document.getElementById('next-step').addEventListener('click', () => {
+      if (currentStepIndex < steps.length - 1) {
+        currentStepIndex++;
+        loadStep(currentStepIndex);
+      }
+    });
+  </script>
+</body>
+</html>

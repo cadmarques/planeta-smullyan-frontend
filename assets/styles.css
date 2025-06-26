@@ -1,0 +1,6 @@
+/* Estilo personalizado para a imagem do mapa */
+.map-image {
+    max-width: 100%; /* Garante que a imagem seja responsiva */
+    height: auto;    /* Mantém a proporção da imagem */
+    width: 800px;    /* Define um tamanho inicial (ajuste conforme necessário) */
+  }

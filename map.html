@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planeta Smullyan - Mapa</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="container text-center mt-5">
+    <h1 class="display-4">Planeta Smullyan</h1>
+    <p class="lead">Explore as ilhas misteriosas e resolva enigmas lógicos.</p>
+
+    <!-- Imagem do Mapa com Evento de Clique -->
+    <div class="d-flex justify-content-center mb-4 position-relative">
+      <img id="map-image" src="assets/images/planeta-smullyan-v2.jpg" alt="Mapa do Planeta Smullyan" 
+           class="img-fluid shadow map-image">
+    </div>
+
+    <!-- Feedback do Clique -->
+    <p id="click-feedback" class="text-muted">Clique no mapa para explorar!</p>
+
+    <!-- Botão Voltar -->
+    <a href="index.html" class="btn btn-secondary btn-lg">Voltar à Página Inicial</a>
+  </div>
+
+  <!-- Script para Capturar o Clique -->
+  <script>
+    // Função para capturar o clique na imagem
+    document.getElementById('map-image').addEventListener('click', function(event) {
+        const img = event.target;
+        const rect = img.getBoundingClientRect();
+
+        // Tamanho original da imagem (substitua pelos valores reais da sua imagem)
+        const originalWidth = 1024; // Largura original da imagem em pixels
+        const originalHeight = 768; // Altura original da imagem em pixels
+
+        // Calcular as coordenadas relativas à imagem
+        const x = Math.round(event.clientX - rect.left);
+        const y = Math.round(event.clientY - rect.top);
+
+        // Calcular as coordenadas normalizadas
+        const normalizedX = Math.round((x / rect.width) * originalWidth);
+        const normalizedY = Math.round((y / rect.height) * originalHeight);
+
+        // Exibir as coordenadas no console
+        console.log(`Clique registrado: (${normalizedX}, ${normalizedY})`);
+
+        // Enviar as coordenadas para o backend
+        fetch(`http://localhost:5000/api/islands/find-by-click?x=${normalizedX}&y=${normalizedY}`)
+            .then(response => {
+            if (!response.ok) {
+                // Se a resposta for 404 (Not Found), trata como caso normal
+                return { message: 'Nenhuma ilha encontrada.' };
+            }
+            return response.json();
+            })
+            .then(data => {
+            if (data.message) {
+                console.log(data.message); // Exibe mensagem no console
+                alert(data.message); // Exibe mensagem para o usuário
+            } else {
+                console.log(`Ilha encontrada: ${data.name}`); // Exibe o nome da ilha no console
+                window.location.href = `/island.html?id=${data._id}`; // Redireciona para a página da ilha
+            }
+            })
+            .catch(error => {
+            console.error('Erro inesperado:', error);
+            });
+    });
+  </script>
+</body>
+</html>
