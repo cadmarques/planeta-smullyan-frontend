@@ -48,7 +48,7 @@
       const data = await response.json();
       if (response.ok) {
         //alert('Login bem-sucedido!');
-        window.location.href = '/backoffice'; // Redireciona para o backoffice
+        window.location.href = `${FRONTEND_BASE_URL}/backoffice`; // Redireciona para o backoffice
       } else {
         alert(data.message || 'Erro ao realizar login.');
       }
