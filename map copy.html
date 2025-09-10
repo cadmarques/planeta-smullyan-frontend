@@ -7,16 +7,6 @@
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css">
-  <script>
-    // Configuração de URLs dinâmicas
-    const API_BASE_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5000' 
-        : 'https://your-backend.onrender.com'; // Substitua pela URL do backend no Render
-
-    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
-        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
-  </script>
 </head>
 <body>
   <div class="container text-center mt-5">
@@ -34,9 +24,6 @@
 
     <!-- Botão Voltar -->
     <a href="index.html" class="btn btn-secondary btn-lg">Voltar à Página Inicial</a>
-
-    <!-- Balão que segue o cursor -->
-    <div id="balloon"></div>
   </div>
 
   <!-- Script para Capturar o Clique -->
@@ -62,7 +49,7 @@
         console.log(`Clique registrado: (${normalizedX}, ${normalizedY})`);
 
         // Enviar as coordenadas para o backend
-        fetch(`${API_BASE_URL}/api/islands/find-by-click?x=${normalizedX}&y=${normalizedY}`)
+        fetch(`http://localhost:5000/api/islands/find-by-click?x=${normalizedX}&y=${normalizedY}`)
             .then(response => {
             if (!response.ok) {
                 // Se a resposta for 404 (Not Found), trata como caso normal
@@ -87,29 +74,6 @@
             .catch(error => {
             console.error('Erro inesperado:', error);
             });
-    });
-
-    // Adiciona o comportamento do balão
-    const balloon = document.getElementById('balloon');
-
-    // Mostra o balão quando o mouse entra no mapa
-    document.getElementById('map-image').addEventListener('mouseenter', () => {
-      balloon.style.display = 'block';
-    });
-
-    // Esconde o balão quando o mouse sai do mapa
-    document.getElementById('map-image').addEventListener('mouseleave', () => {
-      balloon.style.display = 'none';
-    });
-
-    // Move o balão conforme o cursor
-    document.getElementById('map-image').addEventListener('mousemove', (event) => {
-      const x = event.clientX;
-      const y = event.clientY;
-
-      // Atualiza a posição do balão
-      balloon.style.left = `${x}px`;
-      balloon.style.top = `${y}px`;
     });
   </script>
 </body>

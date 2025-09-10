@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backoffice</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .icon {
+      width: 100px;
+      height: auto;
+      margin-bottom: 1rem;
+    }
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-primary {
+      width: 100%;
+    }
+  </style>
+  <script>
+    // Configuração de URLs dinâmicas
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
+
+    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
+  </script>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Backoffice</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/#">Sair</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <h2 class="mb-4 text-center">Planeta Smullyan - Painel de Administração</h2>
+    <div class="row">
+      <!-- Gerenciar Ilhas -->
+      <div class="col-md-4 mb-3">
+        <div class="card">
+          <div class="card-body text-center">
+            <img src="assets/images/islandIcon.jpg" alt="Gerenciar Ilhas" class="icon">
+            <a href="/manage-islands" class="btn btn-primary">Gerir Ilhas</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gerenciar Puzzles -->
+      <div class="col-md-4 mb-3">
+        <div class="card">
+          <div class="card-body text-center">
+            <img src="assets/images/puzzlesIcon.jpg" alt="Gerenciar Puzzles" class="icon">
+            <a href="/manage-puzzles" class="btn btn-primary">Gerir Puzzles</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inserir Imagens -->
+      <div class="col-md-4 mb-3">
+        <div class="card">
+          <div class="card-body text-center">
+            <img src="assets/images/uploadImagesIcon.jpg" alt="Inserir Imagens" class="icon">
+            <a href="/upload-image" class="btn btn-primary">Inserir Imagens</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

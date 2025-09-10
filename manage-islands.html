@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planeta Smullyan - Gerir Ilhas</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+    }
+    .btn-disabled {
+      pointer-events: none;
+      opacity: 0.65;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+  </style>
+    <script>
+    // Configuração de URLs dinâmicas
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
+
+    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
+  </script>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/backoffice">Voltar ao Backoffice</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2 class="text-center mb-4">Planeta Smullyan - Gerir Ilhas</h2>
+
+    <!-- Botões de Ação -->
+    <div class="d-flex justify-content-between mb-4">
+      <a href="/create-island" class="btn btn-success">Inserir Ilha</a>
+      <button class="btn btn-danger btn-disabled" disabled>Remover Ilha</button>
+    </div>
+
+    <!-- Lista de Ilhas -->
+    <div id="islands-list">
+      <div class="text-center">
+        <p>Carregando ilhas...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Função para carregar as ilhas do backend
+    async function loadIslands() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/islands`);
+        const islands = await response.json();
+
+        const islandsList = document.getElementById('islands-list');
+        islandsList.innerHTML = ''; // Limpa o conteúdo anterior
+
+        if (islands.length === 0) {
+          islandsList.innerHTML = '<p class="text-center">Nenhuma ilha encontrada.</p>';
+          return;
+        }
+
+        islands.forEach(island => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-body">
+              <h5 class="card-title">${island.name}</h5>
+              <p class="card-text">${island.description}</p>
+              <div class="d-flex justify-content-between">
+                <a href="/edit-island.html?id=${island._id}" class="btn btn-warning btn-disabled">Editar</a>
+              </div>
+            </div>
+          `;
+          islandsList.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar ilhas:', error);
+        document.getElementById('islands-list').innerHTML = `
+          <p class="text-center text-danger">Erro ao carregar ilhas. Por favor, tente novamente.</p>
+        `;
+      }
+    }
+
+    // Carrega as ilhas ao iniciar a página
+    loadIslands();
+  </script>
+</body>
+</html>

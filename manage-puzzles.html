@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerir Puzzles</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+    }
+    .btn-disabled {
+      pointer-events: none;
+      opacity: 0.65;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+  </style>
+  <script>
+    // Configuração de URLs dinâmicas
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
+
+    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
+  </script>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/backoffice.html">Voltar ao Backoffice</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2 class="text-center mb-4">Gerir Puzzles</h2>
+
+    <!-- Escolha da Ilha -->
+    <div class="mb-4">
+      <label for="island-select" class="form-label">Selecione uma Ilha</label>
+      <select id="island-select" class="form-select" required>
+        <option value="" disabled selected>Escolha uma ilha</option>
+      </select>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="d-flex justify-content-between mb-4">
+      <button id="create-puzzle-button" class="btn btn-success" disabled>Criar Novo Puzzle</button>
+      <button class="btn btn-danger btn-disabled" disabled>Remover Puzzle</button>
+    </div>
+
+    <!-- Lista de Puzzles -->
+    <div id="puzzles-list">
+      <p class="text-center">Selecione uma ilha para ver os puzzles.</p>
+    </div>
+  </div>
+
+  <script>
+    let selectedIslandId = null;
+
+    // Função para carregar as ilhas no dropdown
+    async function loadIslands() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/islands`);
+        const islands = await response.json();
+
+        const islandSelect = document.getElementById('island-select');
+        islandSelect.innerHTML = '<option value="" disabled selected>Escolha uma ilha</option>';
+
+        islands.forEach(island => {
+          const option = document.createElement('option');
+          option.value = island._id;
+          option.textContent = island.name;
+          islandSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar ilhas:', error);
+        document.getElementById('island-select').innerHTML = `
+          <option value="" disabled selected>Erro ao carregar ilhas</option>
+        `;
+      }
+    }
+
+    // Função para carregar os puzzles de uma ilha
+    async function loadPuzzles(islandId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/puzzles/by-island?island=${islandId}`);
+            const puzzles = await response.json();
+
+            console.log('Puzzles recebidos:', puzzles); // Log para depuração
+
+            const puzzlesList = document.getElementById('puzzles-list');
+            puzzlesList.innerHTML = ''; // Limpa o conteúdo anterior
+
+            if (puzzles.length === 0) {
+            puzzlesList.innerHTML = '<p class="text-center">Nenhum puzzle encontrado para esta ilha.</p>';
+            return;
+            }
+
+            puzzles.forEach(puzzle => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-body">
+                <h5 class="card-title">${puzzle.title || 'Título Indisponível'}</h5> <!-- Usando "title" -->
+                <p class="card-text">${puzzle.description || 'Sem descrição'}</p>
+                <div class="d-flex justify-content-between">
+                    <a href="/edit-puzzle?id=${puzzle._id}" class="btn btn-warning">Editar</a>
+                    <div>
+                        <input type="checkbox" class="puzzle-checkbox" data-puzzle-id="${puzzle._id}">
+                        <label>Selecionar</label>
+                    </div>
+                </div>
+                </div>
+            `;
+            puzzlesList.appendChild(card);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar puzzles:', error);
+            document.getElementById('puzzles-list').innerHTML = `
+            <p class="text-center text-danger">Erro ao carregar puzzles. Por favor, tente novamente.</p>
+            `;
+        }
+    }
+
+    // Função para verificar se algum puzzle está selecionado
+    function updateRemoveButtonState() {
+        const selectedPuzzles = document.querySelectorAll('.puzzle-checkbox:checked');
+        const removeButton = document.querySelector('.btn-danger');
+
+        if (selectedPuzzles.length > 0) {
+            removeButton.removeAttribute('disabled'); // Habilita o botão
+        } else {
+            removeButton.setAttribute('disabled', 'true'); // Desabilita o botão
+        }
+    }
+
+    // Adicionar eventos aos checkboxes
+    document.getElementById('puzzles-list').addEventListener('change', (e) => {
+        if (e.target.classList.contains('puzzle-checkbox')) {
+            updateRemoveButtonState();
+        }
+    });
+
+    document.querySelector('.btn-danger').addEventListener('click', async () => {
+        const selectedPuzzles = Array.from(document.querySelectorAll('.puzzle-checkbox:checked')).map(checkbox => checkbox.dataset.puzzleId);
+
+        if (selectedPuzzles.length === 0) {
+            alert('Por favor, selecione pelo menos um puzzle para remover.');
+            return;
+        }
+
+        // Exibir diálogo de confirmação
+        const isConfirmed = confirm(`Tem certeza de que deseja remover ${selectedPuzzles.length} puzzle(s)? Esta ação não pode ser desfeita.`);
+
+        if (!isConfirmed) return;
+
+        try {
+            // Remover cada puzzle selecionado
+            for (const puzzleId of selectedPuzzles) {
+            await removePuzzle(puzzleId);
+            }
+
+            alert('Puzzle(s) removido(s) com sucesso!');
+            location.reload(); // Recarregar a página para atualizar a lista de puzzles
+        } catch (error) {
+            console.error('Erro ao remover puzzle(s):', error);
+            alert('Ocorreu um erro ao remover o(s) puzzle(s). Por favor, tente novamente.');
+        }
+    });
+
+    async function removePuzzle(puzzleId) {
+        try {
+            console.log("puzzle id a remover: ", puzzleId);
+            // Remover os detalhes do puzzle
+            const detailsResponse = await fetch(`${API_BASE_URL}/api/puzzle-details/${puzzleId}`, {
+            method: 'DELETE',
+            });
+
+            if (!detailsResponse.ok) {
+            throw new Error('Erro ao remover os detalhes do puzzle.');
+            }
+
+            // Remover o puzzle
+            const puzzleResponse = await fetch(`${API_BASE_URL}/api/puzzles/${puzzleId}`, {
+            method: 'DELETE',
+            });
+
+            if (!puzzleResponse.ok) {
+            throw new Error('Erro ao remover o puzzle.');
+            }
+        } catch (error) {
+            console.error('Erro ao remover puzzle:', error);
+            throw error;
+        }
+    }
+
+    // Evento de seleção de ilha
+    document.getElementById('island-select').addEventListener('change', (e) => {
+    selectedIslandId = e.target.value;
+
+    // Limpa a lista de puzzles imediatamente
+    const puzzlesList = document.getElementById('puzzles-list');
+    puzzlesList.innerHTML = ''; // Limpa o conteúdo anterior
+
+    if (selectedIslandId) {
+        // Habilita o botão "Criar Novo Puzzle"
+        document.getElementById('create-puzzle-button').disabled = false;
+
+        puzzlesList.innerHTML = ''; // Limpa o conteúdo anterior
+
+
+        // Carrega os puzzles da ilha selecionada
+        loadPuzzles(selectedIslandId);
+    } else {
+        // Desabilita o botão "Criar Novo Puzzle" se nenhuma ilha for selecionada
+        document.getElementById('create-puzzle-button').disabled = true;
+
+        // Exibe uma mensagem informando que é necessário selecionar uma ilha
+        puzzlesList.innerHTML = '<p class="text-center">Selecione uma ilha para ver os puzzles.</p>';
+    }
+    });
+
+    // Evento de clique no botão "Criar Novo Puzzle"
+    document.getElementById('create-puzzle-button').addEventListener('click', () => {
+      if (!selectedIslandId) {
+        alert('Por favor, selecione uma ilha.');
+        return;
+      }
+      window.location.href = `/create-puzzle?island=${selectedIslandId}`;
+    });
+
+    // Carrega as ilhas ao iniciar a página
+    loadIslands();
+  </script>
+</body>
+</html>

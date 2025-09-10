@@ -7,21 +7,11 @@
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css">
-  <script>
-    // Configuração de URLs dinâmicas
-    const API_BASE_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5000' 
-        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
-
-    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
-        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
-  </script>
 </head>
 <body>
   <div class="container text-center mt-5">
     <!-- Banner da Ilha -->
-    <div id="island-banner" class="mb-4 d-flex justify-content-center">
+    <div id="island-banner" class="mb-4">
       <img id="banner-image" src="" alt="Banner da Ilha" class="img-fluid rounded" style="max-height: 300px;">
     </div>
 
@@ -32,7 +22,7 @@
     <!-- Seção de Puzzles -->
     <div id="puzzle-section" class="mt-4">
       <h2>Puzzles:</h2>
-      <div id="puzzle-grid" class="row"></div> <!-- Grid para os puzzles -->
+      <ul id="puzzle-list" class="list-group"></ul>
     </div>
 
     <!-- Botão para Voltar ao Mapa -->
@@ -50,7 +40,7 @@
     } else {
       console.log(`Buscando dados da ilha em: /api/islands/${islandId}`);
       // Buscar os dados da ilha do backend
-      fetch(`${API_BASE_URL}/api/islands/${islandId}`)
+      fetch(`http://localhost:5000/api/islands/${islandId}`)
         .then(response => {
           if (!response.ok) {
             throw new Error('Erro ao carregar a ilha.');
@@ -63,7 +53,7 @@
           const bannerImage = document.getElementById('banner-image');
           if (data.banner && data.banner.url) {
             console.log('Banner URL encontrada:', data.banner.url); // Verifica se o campo "url" existe
-            bannerImage.src = `${API_BASE_URL}${data.banner.url}`; // Adiciona o host completo
+            bannerImage.src = `http://localhost:5000${data.banner.url}`; // Adiciona o host completo
             bannerImage.style.display = 'block';
           } else {
             console.log('Banner não encontrado ou URL inválida.'); // Mensagem de erro caso o banner não seja exibido
@@ -77,29 +67,10 @@
           document.getElementById('island-description').textContent = data.description;
 
           // Verificar se há puzzles
-          //const puzzleList = document.getElementById('puzzle-list');
-          const puzzleGrid = document.getElementById('puzzle-grid');
+          const puzzleList = document.getElementById('puzzle-list');
           if (data.puzzles && data.puzzles.length > 0) {
             data.puzzles.forEach(puzzle => {
-
-              const col = document.createElement('div');
-              col.className = 'col-md-6 col-lg-4 mb-4'; // Define largura responsiva (2 por linha em tablets, 3 em desktops)
-
-              col.innerHTML = `
-                <div class="card h-100"> <!-- Card para manter altura consistente -->
-                  <br>
-                  <a href="puzzle-details?islandId=${data._id}&puzzleId=${puzzle._id}" class="text-decoration-none text-dark">
-                    <img src="${API_BASE_URL}${puzzle.icon?.url || ''}" alt="${puzzle.title} Icon" width="50" class="puzzle-icon">
-                    <div class="card-body">
-                      <h5 class="card-title">${puzzle.title}</h5>
-                      <p class="card-text">${puzzle.description}</p>
-                    </div>
-                  </a>
-                </div>
-              `;
-              puzzleGrid.appendChild(col);
-
-             /* const li = document.createElement('li');
+              const li = document.createElement('li');
               li.className = 'list-group-item d-flex align-items-center';
 
               // Criar um link para a página de detalhes do puzzle
@@ -112,7 +83,7 @@
                   </div>
                 </a>
               `;
-              puzzleList.appendChild(li);*/
+              puzzleList.appendChild(li);
             });
           } else {
             puzzleList.innerHTML = '<li class="list-group-item">Nenhum puzzle disponível para esta ilha.</li>';

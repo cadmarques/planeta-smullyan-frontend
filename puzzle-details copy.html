@@ -6,23 +6,11 @@
   <title>Detalhes do Puzzle</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css">
-  <script>
-    // Configuração de URLs dinâmicas
-    const API_BASE_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5000' 
-        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
-
-    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
-        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
-  </script>
 </head>
 <body>
   <div class="container text-center mt-5">
     <!-- Banner da Ilha -->
-    <div id="island-banner" class="mb-4 d-flex justify-content-center">
+    <div id="island-banner" class="mb-4">
       <img id="banner-image" src="" alt="Banner da Ilha" class="img-fluid rounded" style="max-height: 300px;">
     </div>
 
@@ -53,7 +41,7 @@
     // Variáveis globais
     let currentStepIndex = 0;
     let steps = [];
-    const BASE_URL = `${API_BASE_URL}`; // URL base do backend
+    const BASE_URL = 'http://localhost:5000'; // URL base do backend
 
     // Função para carregar um passo específico
     function loadStep(index) {
@@ -63,7 +51,7 @@
 
         // Verificar se há uma referência a personagens de outro passo
         let charactersToDisplay = [];
-        if (step.charactersRef !== undefined && step.charactersRef !== null) {
+        if (step.charactersRef !== undefined && step.charactersRef < steps.length) {
           // Buscar os personagens do passo referencia
           console.log("entrou no characters to dispplay...");
           charactersToDisplay = steps[step.charactersRef-1].characters || [];
@@ -134,7 +122,6 @@
 
         // Exibir texto principal
         const bodyElement = document.createElement('p');
-        bodyElement.classList.add('text-content'); // Adiciona a classe "text-content"
         bodyElement.textContent = step.body;
         stepContent.appendChild(bodyElement);
 
@@ -162,7 +149,7 @@
       }
 
       // Buscar os dados da ilha do backend
-      fetch(`${API_BASE_URL}/api/islands/${islandId}`)
+      fetch(`http://localhost:5000/api/islands/${islandId}`)
         .then(response => {
         if (!response.ok) {
             throw new Error('Erro ao carregar a ilha.');
@@ -173,18 +160,17 @@
         // Preencher o banner, título e descrição da ilha
         const bannerImage = document.getElementById('banner-image');
         if (islandData.banner && islandData.banner.url) {
-            bannerImage.src = `${API_BASE_URL}${islandData.banner.url}`;
+            bannerImage.src = `http://localhost:5000${islandData.banner.url}`;
             bannerImage.style.display = 'block';
         } else {
             bannerImage.style.display = 'none'; // Oculta o banner se não houver
         }
 
         document.getElementById('island-name').textContent = islandData.name;
-        document.getElementById('island-description').classList.add('text-content'); // Adiciona a classe "text-content"
         document.getElementById('island-description').textContent = islandData.description;
 
         // Buscar os dados do puzzle do backend
-        return fetch(`${API_BASE_URL}/api/puzzle-details/${puzzleId}`);
+        return fetch(`http://localhost:5000/api/puzzle-details/${puzzleId}`);
         })
         .then(response => {
         if (!response.ok) {

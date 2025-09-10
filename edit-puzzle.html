@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar Puzzle</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .step-card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+  </style>
+  <script>
+    // Configuração de URLs dinâmicas
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
+
+    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
+  </script>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/manage-puzzles">Voltar a Gerir Puzzles</a>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Editar Puzzle</h2>
+
+    <!-- Formulário de Dados do Puzzle -->
+    <form id="edit-puzzle-form">
+      <input type="hidden" id="puzzle-id" name="id" />
+      <input type="hidden" id="island-id" name="island" />
+      
+      <div class="mb-3">
+        <label for="title" class="form-label">Título do Puzzle</label>
+        <input type="text" id="title" name="title" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label for="description" class="form-label">Descrição do Puzzle</label>
+        <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="icon" class="form-label">Ícone do Puzzle</label>
+        <div class="input-group">
+          <input type="text" id="icon" name="icon" class="form-control" readonly />
+          <button type="button" class="btn btn-secondary" onclick="openImageSelector('icon')">Selecionar Imagem</button>
+        </div>
+      </div>
+
+
+      <!-- Detalhes do Puzzle -->
+      <h4 class="mt-4">Detalhes do Puzzle</h4>
+      <div id="steps-container"></div>
+      <button type="button" class="btn btn-secondary w-100" id="add-step-button" onclick="addStep()">Adicionar Passo</button>
+
+      <button type="submit" class="btn btn-primary w-100 mt-3" id="save-puzzle-button">Salvar Alterações</button>
+    </form>
+  </div>
+
+  <script>
+    let stepCounter = 1;
+
+    // Função para carregar os dados do puzzle
+    async function loadPuzzle(puzzleId) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/puzzles/${puzzleId}`);
+        if (!response.ok) {
+          throw new Error('Erro ao buscar dados do puzzle.');
+        }
+
+        const puzzle = await response.json();
+
+        // Preencher os campos do cabeçalho
+        document.getElementById('puzzle-id').value = puzzle._id;
+        document.getElementById('title').value = puzzle.title;
+        document.getElementById('description').value = puzzle.description;
+        document.getElementById('icon').value = puzzle.icon;
+
+        // Preencher o campo oculto com o ID da ilha
+        document.getElementById('island-id').value = puzzle.island;
+
+        // Carregar os detalhes (se existirem)
+        if (puzzle.details && puzzle.details.steps) {
+          puzzle.details.steps.forEach(step => {
+            addStep(step);
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do puzzle:', error);
+        alert('Ocorreu um erro ao carregar os dados do puzzle. Por favor, tente novamente.');
+      }
+    }
+
+    // Função para adicionar um novo passo (pré-preenchido ou vazio)
+    function addStep(stepData = null) {
+      const stepsContainer = document.getElementById('steps-container');
+
+      const stepCard = document.createElement('div');
+      stepCard.className = 'step-card';
+      stepCard.innerHTML = `
+        <h5>Passo ${stepCounter}</h5>
+        <div class="mb-3">
+          <label class="form-label">Personagens</label>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Usar/Copiar Personagens de Outro Passo</label>
+              <div class="input-group">
+                <input type="number" class="form-control" placeholder="Número do passo" id="copy-from-step-${stepCounter}" />
+                <button type="button" class="btn btn-info" onclick="useCharacters(${stepCounter})">Usar</button>
+                <button type="button" class="btn btn-warning" onclick="copyCharacters(${stepCounter})">Copiar</button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Referência de Personagens (charactersRef)</label>
+              <input type="number" class="form-control" id="characters-ref-${stepCounter}" value="${stepData?.charactersRef || ''}" />
+            </div>
+          </div>
+          <div id="characters-${stepCounter}"></div>
+          <button type="button" class="btn btn-sm btn-info mt-2" onclick="addCharacter(${stepCounter})">Adicionar Personagem</button>
+        </div>
+        <div class="mb-3">
+          <label for="step-body-${stepCounter}" class="form-label">Texto Principal</label>
+          <textarea id="step-body-${stepCounter}" class="form-control" rows="5" required>${stepData?.body || ''}</textarea>
+        </div>
+        <div id="challenge-${stepCounter}" style="display: ${stepData?.challenge ? 'block' : 'none'};">
+          <div class="mb-3">
+            <label for="challenge-question-${stepCounter}" class="form-label">Pergunta do Desafio</label>
+            <textarea id="challenge-question-${stepCounter}" class="form-control" rows="2">${stepData?.challenge?.question || ''}</textarea>
+          </div>
+          <div class="mb-3">
+            <label for="challenge-options-${stepCounter}" class="form-label">Opções de Resposta (separadas por vírgula)</label>
+            <input type="text" id="challenge-options-${stepCounter}" class="form-control" value="${stepData?.challenge?.options?.join(', ') || ''}" />
+          </div>
+          <div class="mb-3">
+            <label for="correct-answer-${stepCounter}" class="form-label">Resposta Correta</label>
+            <input type="text" id="correct-answer-${stepCounter}" class="form-control" value="${stepData?.challenge?.correctAnswer || ''}" />
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary w-100 mt-2" id="copy-text-button-${stepCounter}" onclick="copyPreviousStepText(${stepCounter})" ${
+            stepCounter === 1 ? 'disabled' : ''
+          }>Copiar Texto do Passo Anterior</button>
+          <br>
+        <button type="button" class="btn btn-secondary w-100" onclick="toggleChallenge(${stepCounter})">${stepData?.challenge ? 'Remover Desafio' : 'Adicionar Desafio'}</button>
+      `;
+      stepsContainer.appendChild(stepCard);
+
+      // Preencher personagens (se existirem)
+      if (stepData?.characters && !stepData?.charactersRef) {
+        stepData.characters.forEach(character => {
+          addCharacter(stepCounter, character);
+        });
+      }
+
+      // Ocultar campos de personagens se charactersRef estiver preenchido
+      const charactersRefField = document.getElementById(`characters-ref-${stepCounter}`);
+      const charactersContainer = document.getElementById(`characters-${stepCounter}`);
+      charactersRefField.addEventListener('input', () => {
+        if (charactersRefField.value) {
+          charactersContainer.style.display = 'none'; // Oculta os campos de personagens
+        } else {
+          charactersContainer.style.display = 'block'; // Mostra os campos de personagens
+        }
+      });
+
+      if (stepData?.charactersRef) {
+        charactersContainer.style.display = 'none'; // Oculta os campos de personagens se charactersRef estiver preenchido
+      }
+
+      stepCounter++;
+    }
+
+    // Função para copiar o texto do passo anterior
+    function copyPreviousStepText(stepNumber) {
+      if (stepNumber <= 1) {
+        alert('Não há passo anterior para copiar.');
+        return;
+      }
+
+      const previousStepBody = document.getElementById(`step-body-${stepNumber - 1}`).value.trim();
+      const currentStepBody = document.getElementById(`step-body-${stepNumber}`);
+
+      if (!previousStepBody) {
+        alert('O passo anterior não possui texto para copiar.');
+        return;
+      }
+
+      currentStepBody.value = previousStepBody; // Copia o texto do passo anterior
+    }
+
+    // Função para alternar a visibilidade do desafio
+    function toggleChallenge(stepNumber) {
+      const challengeDiv = document.getElementById(`challenge-${stepNumber}`);
+      if (challengeDiv.style.display === 'none') {
+        challengeDiv.style.display = 'block'; // Mostra o desafio
+      } else {
+        challengeDiv.style.display = 'none'; // Oculta o desafio
+      }
+    }
+
+    // Função para adicionar um personagem a um passo (pré-preenchido ou vazio)
+    function addCharacter(stepNumber, characterData = null) {
+        const charactersContainer = document.getElementById(`characters-${stepNumber}`);
+
+        // Contador interno para garantir IDs únicos dentro do mesmo passo
+        const characterCounter = charactersContainer.children.length + 1;
+
+        const characterDiv = document.createElement('div');
+        characterDiv.className = 'mb-2';
+        characterDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+            <label class="form-label">Imagem do Personagem</label>
+            <div class="input-group">
+                <input type="text" id="character-image-${stepNumber}-${characterCounter}" class="form-control character-image" value="${characterData?.image._id || ''}" readonly />
+                <button type="button" class="btn btn-secondary" onclick="openImageSelector('character-image-${stepNumber}-${characterCounter}')">Selecionar Imagem</button>
+            </div>
+            </div>
+            <div class="col-md-6">
+            <label class="form-label">Legenda (opcional)</label>
+            <input type="text" class="form-control character-label" value="${characterData?.label || ''}" placeholder="Legenda" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+            <label class="form-label">Posição</label>
+            <select class="form-select character-position" required>
+                <option value="left" ${characterData?.position === 'left' ? 'selected' : ''}>Esquerda</option>
+                <option value="right" ${characterData?.position === 'right' ? 'selected' : ''}>Direita</option>
+            </select>
+            </div>
+            <div class="col-md-6">
+            <label class="form-label">Ordem</label>
+            <input type="number" class="form-control character-order" value="${characterData?.order || ''}" placeholder="Ordem" required />
+            </div>
+        </div>
+        `;
+        charactersContainer.appendChild(characterDiv);
+    }
+
+    // Função para abrir a pop-up de seleção de imagem
+    function openImageSelector(fieldId) {
+        console.log('Field ID:', fieldId); // Verifica se o ID está correto
+        const popup = window.open('/image-selector.html', 'ImageSelector', 'width=800,height=600');
+
+        // Escuta mensagens da pop-up
+        window.addEventListener('message', (event) => {
+            const { imageId } = event.data;
+            if (imageId) {
+            console.log('Received image ID:', imageId); // Verifica se o ID da imagem foi recebido
+            const inputField = document.getElementById(fieldId);
+            if (inputField) {
+                inputField.value = imageId; // Preenche o campo com o ID da imagem
+            } else {
+                console.error('Campo de entrada não encontrado para o ID:', fieldId);
+            }
+            }
+        });
+    }
+
+    // Função para usar personagens de outro passo
+    function useCharacters(stepNumber) {
+      const sourceStep = document.getElementById(`copy-from-step-${stepNumber}`).value.trim();
+      if (!sourceStep || isNaN(sourceStep)) {
+        alert('Por favor, insira um número de passo válido.');
+        return;
+      }
+
+      const targetCharactersRef = document.getElementById(`characters-ref-${stepNumber}`);
+      targetCharactersRef.value = sourceStep; // Define o charactersRef
+
+      // Oculta os campos de personagens
+      const charactersContainer = document.getElementById(`characters-${stepNumber}`);
+      charactersContainer.style.display = 'none';
+
+      // Limpa os personagens locais (se houver)
+      charactersContainer.innerHTML = '';
+    }
+
+    // Função para copiar personagens de outro passo
+    function copyCharacters(stepNumber) {
+      const sourceStep = document.getElementById(`copy-from-step-${stepNumber}`).value.trim();
+      if (!sourceStep || isNaN(sourceStep)) {
+        alert('Por favor, insira um número de passo válido.');
+        return;
+      }
+
+      const sourceCharactersContainer = document.getElementById(`characters-${sourceStep}`);
+      const targetCharactersContainer = document.getElementById(`characters-${stepNumber}`);
+
+      if (!sourceCharactersContainer || sourceCharactersContainer.children.length === 0) {
+        alert('O passo selecionado não possui personagens.');
+        return;
+      }
+
+      // Clona os personagens permitindo edição
+      targetCharactersContainer.innerHTML = '';
+      Array.from(sourceCharactersContainer.children).forEach(characterDiv => {
+        const clone = characterDiv.cloneNode(true);
+        targetCharactersContainer.appendChild(clone);
+      });
+
+      // Remove o charactersRef (pois estamos copiando os personagens)
+      const charactersRefField = document.getElementById(`characters-ref-${stepNumber}`);
+      charactersRefField.value = '';
+
+      // Mostra os campos de personagens
+      targetCharactersContainer.style.display = 'block';
+    }
+
+    // Envio do formulário
+    document.getElementById('edit-puzzle-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const puzzleId = formData.get('id');
+      const title = formData.get('title');
+      const description = formData.get('description');
+      const icon = formData.get('icon');
+
+
+
+      if (!title || !description || !icon ) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const steps = [];
+      document.querySelectorAll('.step-card').forEach((stepCard, index) => {
+        const stepBody = stepCard.querySelector(`#step-body-${index + 1}`).value.trim();
+        const charactersRef = parseInt(stepCard.querySelector(`#characters-ref-${index + 1}`).value.trim()) || null;
+        const challengeQuestion = stepCard.querySelector(`#challenge-question-${index + 1}`)?.value.trim();
+        const challengeOptions = stepCard.querySelector(`#challenge-options-${index + 1}`)?.value.split(',').map(option => option.trim());
+        const correctAnswer = stepCard.querySelector(`#correct-answer-${index + 1}`)?.value.trim();
+
+        const characters = [];
+        stepCard.querySelectorAll(`#characters-${index + 1} .mb-2`).forEach(characterDiv => {
+            const image = characterDiv.querySelector('.character-image').value.trim();
+            const label = characterDiv.querySelector('.character-label').value.trim();
+            const position = characterDiv.querySelector('.character-position').value;
+            const order = parseInt(characterDiv.querySelector('.character-order').value, 10);
+
+            characters.push({ image, label, position, order });
+        });
+
+        console.log("characters: ", characters);
+
+        const step = {
+            stepNumber: index + 1,
+            body: stepBody,
+            charactersRef,
+            characters: charactersRef === null ? characters : [], // Preenche characters apenas se charactersRef for null
+        };
+
+        if (challengeQuestion && challengeOptions.length > 0 && correctAnswer) {
+            step.challenge = {
+            question: challengeQuestion,
+            options: challengeOptions,
+            correctAnswer,
+            };
+        }
+
+        steps.push(step);
+        });
+
+      const puzzleData = {
+        title,
+        description,
+        icon
+      };
+
+      const detailsData = { steps };
+
+      try {
+        // Atualizar o cabeçalho do puzzle
+        const updatePuzzleResponse = await fetch(`${API_BASE_URL}/api/puzzles/admin/${puzzleId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(puzzleData),
+        });
+
+        const updatePuzzleResult = await updatePuzzleResponse.json();
+        if (!updatePuzzleResponse.ok) {
+          throw new Error(updatePuzzleResult.message || 'Erro ao atualizar o cabeçalho do puzzle.');
+        }
+
+        console.log("detailsData: ", detailsData);
+
+        // Atualizar os detalhes do puzzle
+        const updateDetailsResponse = await fetch(`${API_BASE_URL}/api/puzzle-details/${puzzleId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(detailsData),
+        });
+
+        const updateDetailsResult = await updateDetailsResponse.json();
+        if (!updateDetailsResponse.ok) {
+          throw new Error(updateDetailsResult.message || 'Erro ao atualizar os detalhes do puzzle.');
+        }
+
+        alert('Puzzle atualizado com sucesso!');
+        window.location.href = '/manage-puzzles.html';
+      } catch (error) {
+        console.error('Erro ao atualizar puzzle:', error);
+        alert(`Ocorreu um erro ao atualizar o puzzle: ${error.message}`);
+      }
+    });
+
+    // Carregar os dados do puzzle ao iniciar a página
+    const urlParams = new URLSearchParams(window.location.search);
+    const puzzleId = urlParams.get('id');
+    if (puzzleId) {
+      loadPuzzle(puzzleId);
+    } else {
+      alert('ID do puzzle não encontrado.');
+      window.location.href = '/manage-puzzles.html';
+    }
+  </script>
+</body>
+</html>

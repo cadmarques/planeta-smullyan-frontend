@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map Helper - Definir Fronteiras</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* Estilo personalizado */
+    .map-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .map-image {
+      max-width: 100%;
+      height: auto;
+      border: 2px dashed #ccc; /* Destaca a área clicável */
+      cursor: crosshair; /* Altera o cursor para cruz ao passar o mouse */
+    }
+    .coordinates-list {
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center mt-5">
+    <h1 class="display-6">Map Helper</h1>
+    <p class="lead">Clique na imagem para registrar as coordenadas das fronteiras.</p>
+
+    <!-- Imagem do Mapa com Evento de Clique -->
+    <div class="map-container">
+      <img id="map-image" src="assets/images/planeta-smullyan-v2.jpg" alt="Mapa do Planeta Smullyan" 
+           class="map-image">
+    </div>
+
+    <!-- Lista de Coordenadas Capturadas -->
+    <div class="coordinates-list">
+      <h4>Coordenadas Registradas:</h4>
+      <ul id="coordinates-output"></ul>
+    </div>
+  </div>
+
+  <!-- Script para Capturar o Clique -->
+  <script>
+    // Variável para armazenar as coordenadas
+    const coordinates = [];
+  
+    // Função para capturar o clique na imagem
+    document.getElementById('map-image').addEventListener('click', function(event) {
+      const img = event.target;
+      const rect = img.getBoundingClientRect();
+  
+      // Tamanho original da imagem (substitua pelos valores reais da sua imagem)
+      const originalWidth = 1024; // Largura original da imagem em pixels
+      const originalHeight = 768; // Altura original da imagem em pixels
+  
+      // Calcular as coordenadas relativas à imagem
+      const x = Math.round(event.clientX - rect.left);
+      const y = Math.round(event.clientY - rect.top);
+  
+      // Calcular as coordenadas normalizadas
+      const normalizedX = (x / rect.width) * originalWidth;
+      const normalizedY = (y / rect.height) * originalHeight;
+  
+      // Arredondar para inteiros
+      const roundedX = Math.round(normalizedX);
+      const roundedY = Math.round(normalizedY);
+  
+      // Adicionar as coordenadas à lista
+      coordinates.push({ x: roundedX, y: roundedY });
+  
+      // Atualizar a lista exibida na página
+      const output = document.getElementById('coordinates-output');
+      const listItem = document.createElement('li');
+      listItem.textContent = `(${roundedX}, ${roundedY})`;
+      output.appendChild(listItem);
+  
+      // Exibir as coordenadas no console (para cópia fácil)
+      console.log(`{ x: ${roundedX}, y: ${roundedY} }`);
+    });
+  </script>
+</body>
+</html>

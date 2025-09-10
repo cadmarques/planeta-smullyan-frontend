@@ -4,3 +4,44 @@
     height: auto;    /* Mantém a proporção da imagem */
     width: 800px;    /* Define um tamanho inicial (ajuste conforme necessário) */
   }
+
+body {
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px; /* Ajustar o tamanho da fonte conforme necessário */
+  line-height: 1.6; /* Espaçamento entre linhas para melhor legibilidade */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700; /* Negrito para títulos */
+}
+
+p {
+  font-weight: 400; /* Normal para parágrafos */
+}
+
+.text-content {
+  white-space: pre-line; /* Preserva quebras de linha e remove espaços extras */
+}
+
+.puzzle-icon {
+  height: 50px;
+  width: 50px;
+  object-fit: cover;
+  margin: 0 auto; /* Centraliza o ícone horizontalmente */
+  display: block; /* Garante que o ícone seja tratado como um bloco */
+}
+
+/* Estilo do balão */
+#balloon {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: rgba(255, 255, 255, 0.8); /* Fundo branco semi-transparente */
+  border-radius: 50%; /* Forma circular */
+  border: 2px solid #007bff; /* Borda azul */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra leve */
+  pointer-events: none; /* Garante que o balão não interfira com cliques */
+  transform: translate(-50%, -50%); /* Centraliza o balão no cursor */
+  z-index: 9999; /* Garante que o balão esteja sempre visível */
+  display: none; /* Inicialmente oculto */
+}

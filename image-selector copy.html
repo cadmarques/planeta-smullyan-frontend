@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecionar Imagem</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .selected {
+      border: 2px solid blue; /* Borda azul para indicar seleção */
+      background-color: #e9f7ff; /* Fundo claro para melhor contraste */
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Selecionar Imagem</h2>
+
+    <!-- Campo de Pesquisa de Imagens -->
+    <div class="mb-3">
+      <label for="image-search" class="form-label">Pesquisar Imagem</label>
+      <input type="text" id="image-search" class="form-control" placeholder="Pesquisar por nome ou descrição (mínimo 3 letras)" />
+    </div>
+
+    <!-- Grid de Imagens -->
+    <div id="image-grid" class="row"></div>
+
+    <button id="select-image-button" class="btn btn-primary w-100 mt-3" disabled>Selecionar Imagem</button>
+  </div>
+
+  <script>
+    let selectedImageId = null;
+    let selectedCard = null;
+
+    // Função para carregar imagens
+    async function loadImages(query = '') {
+      try {
+        const response = await fetch(`http://localhost:5000/api/images/search${query ? `?query=${encodeURIComponent(query)}` : ''}`);
+        const images = await response.json();
+
+        const grid = document.getElementById('image-grid');
+        grid.innerHTML = ''; // Limpa o conteúdo anterior
+
+        if (response.ok) {
+          if (images.length === 0) {
+            grid.innerHTML = '<p class="text-center text-muted">Nenhuma imagem encontrada.</p>';
+            return;
+          }
+
+          images.forEach(image => {
+            const card = document.createElement('div');
+            card.className = 'col-md-4 mb-3';
+            card.innerHTML = `
+              <div class="card" data-image-id="${image._id}" style="cursor: pointer;">
+                <div class="card-body">
+                  <h6 class="card-title">${image.name}</h6>
+                  <p class="card-text">${image.description}</p>
+                  <small class="text-muted">Criado em: ${new Date(image.createdAt).toLocaleDateString()}</small>
+                </div>
+              </div>
+            `;
+            card.querySelector('.card').addEventListener('click', () => selectImage(image._id, card.querySelector('.card')));
+            grid.appendChild(card);
+          });
+        } else {
+          alert(images.message || 'Erro ao carregar imagens.');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar imagens:', error);
+        alert('Ocorreu um erro inesperado ao carregar imagens.');
+      }
+    }
+
+    // Função para selecionar uma imagem
+    function selectImage(imageId, cardElement) {
+      if (selectedCard) {
+        selectedCard.classList.remove('selected'); // Remove o destaque do card anterior
+      }
+
+      selectedImageId = imageId;
+      selectedCard = cardElement;
+      selectedCard.classList.add('selected'); // Adiciona o destaque ao card atual
+      document.getElementById('select-image-button').disabled = false; // Habilita o botão "Selecionar Imagem"
+    }
+
+    // Evento de pesquisa
+    document.getElementById('image-search').addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      if (query.length >= 3) {
+        loadImages(query); // Executa a pesquisa se o texto tiver pelo menos 3 caracteres
+      } else if (query.length === 0) {
+        loadImages(); // Carrega as 10 imagens mais recentes se o campo estiver vazio
+      }
+    });
+
+    // Evento de clique no botão "Selecionar Imagem"
+    document.getElementById('select-image-button').addEventListener('click', () => {
+      if (!selectedImageId) {
+        alert('Por favor, selecione uma imagem.');
+        return;
+      }
+
+      // Retorna o ID da imagem para a página principal
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ imageId: selectedImageId }, '*'); // Envia o ID da imagem para a página principal
+      }
+
+      // Fecha a pop-up
+      window.close();
+    });
+
+    // Carrega as imagens iniciais
+    loadImages();
+  </script>
+</body>
+</html>

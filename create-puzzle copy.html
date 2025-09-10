@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar Novo Puzzle</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .step-card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/manage-puzzles.html">Voltar a Gerir Puzzles</a>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Criar Novo Puzzle</h2>
+
+    <!-- Formulário de Dados do Puzzle -->
+    <form id="create-puzzle-form">
+      <div class="mb-3">
+        <label for="title" class="form-label">Título do Puzzle</label>
+        <input type="text" id="title" name="title" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label for="description" class="form-label">Descrição do Puzzle</label>
+        <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="icon" class="form-label">Ícone do Puzzle</label>
+        <div class="input-group">
+          <input type="text" id="icon" name="icon" class="form-control" readonly />
+          <button type="button" class="btn btn-secondary" onclick="openImageSelector('icon')">Selecionar Imagem</button>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="island" class="form-label">Ilha</label>
+        <select id="island" name="island" class="form-select" required>
+          <option value="" disabled selected>Escolha uma ilha</option>
+        </select>
+      </div>
+
+      <!-- Detalhes do Puzzle -->
+      <h4 class="mt-4">Detalhes do Puzzle</h4>
+      <div id="steps-container"></div>
+      <button type="button" class="btn btn-secondary w-100" id="add-step-button">Adicionar Passo</button>
+
+      <button type="submit" class="btn btn-primary w-100 mt-3" id="save-puzzle-button">Salvar Puzzle</button>
+    </form>
+  </div>
+
+  <script>
+    let stepCounter = 1;
+
+    // Função para carregar as ilhas no dropdown
+    async function loadIslands() {
+      try {
+        const response = await fetch('http://localhost:5000/api/islands');
+        const islands = await response.json();
+
+        const islandSelect = document.getElementById('island');
+        islandSelect.innerHTML = '<option value="" disabled selected>Escolha uma ilha</option>';
+
+        islands.forEach(island => {
+          const option = document.createElement('option');
+          option.value = island._id;
+          option.textContent = island.name;
+          islandSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar ilhas:', error);
+        document.getElementById('island').innerHTML = `
+          <option value="" disabled selected>Erro ao carregar ilhas</option>
+        `;
+      }
+    }
+
+    // Função para abrir a pop-up de seleção de imagem
+    function openImageSelector(fieldId) {
+      const popup = window.open('/image-selector.html', 'ImageSelector', 'width=800,height=600');
+      
+      // Escuta mensagens da pop-up
+      window.addEventListener('message', (event) => {
+        const { imageId } = event.data;
+        if (imageId) {
+          document.getElementById(fieldId).value = imageId; // Preenche o campo com o ID da imagem
+        }
+      });
+    }
+
+    // Função para adicionar um novo passo
+    function addStep() {
+      const stepsContainer = document.getElementById('steps-container');
+
+      const stepCard = document.createElement('div');
+      stepCard.className = 'step-card';
+      stepCard.innerHTML = `
+        <h5>Passo ${stepCounter}</h5>
+        <div class="mb-3">
+          <label for="step-body-${stepCounter}" class="form-label">Texto Principal</label>
+          <textarea id="step-body-${stepCounter}" class="form-control" rows="2" required></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="characters-${stepCounter}" class="form-label">Personagens</label>
+          <div id="characters-${stepCounter}"></div>
+          <button type="button" class="btn btn-sm btn-info mt-2" onclick="addCharacter(${stepCounter})">Adicionar Personagem</button>
+        </div>
+        <div class="mb-3">
+          <label for="challenge-question-${stepCounter}" class="form-label">Desafio (opcional)</label>
+          <textarea id="challenge-question-${stepCounter}" class="form-control" rows="2" placeholder="Pergunta do desafio"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="challenge-options-${stepCounter}" class="form-label">Opções de Resposta (separadas por vírgula)</label>
+          <input type="text" id="challenge-options-${stepCounter}" class="form-control" placeholder="Opção 1, Opção 2, Opção 3" />
+        </div>
+        <div class="mb-3">
+          <label for="correct-answer-${stepCounter}" class="form-label">Resposta Correta</label>
+          <input type="text" id="correct-answer-${stepCounter}" class="form-control" placeholder="Resposta correta" />
+        </div>
+      `;
+      stepsContainer.appendChild(stepCard);
+
+      stepCounter++;
+    }
+
+    // Função para adicionar um personagem a um passo
+    function addCharacter(stepNumber) {
+      const charactersContainer = document.getElementById(`characters-${stepNumber}`);
+      const characterDiv = document.createElement('div');
+      characterDiv.className = 'mb-2';
+      characterDiv.innerHTML = `
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Imagem do Personagem</label>
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="ID da imagem" readonly />
+              <button type="button" class="btn btn-secondary" onclick="openImageSelector(this.previousElementSibling.id)">Selecionar Imagem</button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Legenda (opcional)</label>
+            <input type="text" class="form-control" placeholder="Legenda" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Posição</label>
+            <select class="form-select" required>
+              <option value="left">Esquerda</option>
+              <option value="right">Direita</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ordem</label>
+            <input type="number" class="form-control" placeholder="Ordem" required />
+          </div>
+        </div>
+      `;
+      charactersContainer.appendChild(characterDiv);
+    }
+
+    // Envio do formulário
+    document.getElementById('create-puzzle-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const title = formData.get('title');
+      const description = formData.get('description');
+      const icon = formData.get('icon');
+      const island = formData.get('island');
+
+      if (!title || !description || !icon || !island) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const steps = [];
+      document.querySelectorAll('.step-card').forEach((stepCard, index) => {
+        const stepBody = stepCard.querySelector(`#step-body-${index + 1}`).value.trim();
+        const challengeQuestion = stepCard.querySelector(`#challenge-question-${index + 1}`).value.trim();
+        const challengeOptions = stepCard.querySelector(`#challenge-options-${index + 1}`).value.split(',').map(option => option.trim());
+        const correctAnswer = stepCard.querySelector(`#correct-answer-${index + 1}`).value.trim();
+
+        const characters = [];
+        stepCard.querySelectorAll('#characters div.row').forEach(characterRow => {
+          const image = characterRow.querySelector('input[type="text"]').value.trim();
+          const label = characterRow.querySelector('input[type="text"]').value.trim();
+          const position = characterRow.querySelector('select').value;
+          const order = parseInt(characterRow.querySelector('input[type="number"]').value, 10);
+
+          characters.push({ image, label, position, order });
+        });
+
+        const step = {
+          stepNumber: index + 1,
+          body: stepBody,
+          characters,
+        };
+
+        if (challengeQuestion && challengeOptions.length > 0 && correctAnswer) {
+          step.challenge = {
+            question: challengeQuestion,
+            options: challengeOptions,
+            correctAnswer,
+          };
+        }
+
+        steps.push(step);
+      });
+
+      const puzzleData = {
+        title,
+        description,
+        icon,
+        island,
+        details: {
+          steps,
+        },
+      };
+
+      try {
+        const response = await fetch('http://localhost:5000/api/puzzles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(puzzleData),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert('Puzzle criado com sucesso!');
+          window.location.href = '/manage-puzzles.html';
+        } else {
+          alert(`Erro ao criar puzzle: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao criar puzzle:', error);
+        alert('Ocorreu um erro inesperado ao criar o puzzle.');
+      }
+    });
+
+    // Carrega as ilhas ao iniciar a página
+    loadIslands();
+
+    // Adiciona o primeiro passo automaticamente
+    addStep();
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar Novo Puzzle</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script>
+    // Configuração de URLs dinâmicas
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
+
+    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
+  </script>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/manage-puzzles.html">Voltar a Gerir Puzzles</a>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Criar Novo Puzzle</h2>
+
+    <!-- Formulário de Dados do Puzzle -->
+    <form id="create-puzzle-form">
+      <div class="mb-3">
+        <label for="title" class="form-label">Título do Puzzle</label>
+        <input type="text" id="title" name="title" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label for="description" class="form-label">Descrição do Puzzle</label>
+        <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="icon" class="form-label">Ícone do Puzzle</label>
+        <div class="input-group">
+          <input type="text" id="icon" name="icon" class="form-control" readonly />
+          <button type="button" class="btn btn-secondary" onclick="openImageSelector('icon')">Selecionar Imagem</button>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Ilha:</label>
+        <p id="island-name" class="form-control-plaintext"></p>
+        <input type="hidden" id="island-id" name="island" />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-3" id="save-puzzle-button">Salvar Puzzle</button>
+    </form>
+  </div>
+
+  <script>
+    // Função para carregar as informações da ilha
+    async function loadIslands() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedIslandId = urlParams.get('island');
+
+        if (!selectedIslandId) {
+          alert('ID da ilha não encontrado. Por favor, selecione uma ilha antes de criar o puzzle.');
+          window.location.href = '/manage-puzzles.html';
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/islands/${selectedIslandId}`);
+        if (!response.ok) {
+          throw new Error('Erro ao buscar informações da ilha.');
+        }
+
+        const island = await response.json();
+        document.getElementById('island-name').textContent = island.name;
+        document.getElementById('island-id').value = island._id;
+      } catch (error) {
+        console.error('Erro ao carregar informações da ilha:', error);
+        alert('Ocorreu um erro ao carregar as informações da ilha. Por favor, tente novamente.');
+      }
+    }
+
+    // Função para abrir a pop-up de seleção de imagem
+    function openImageSelector(fieldId) {
+      const popup = window.open('/image-selector.html', 'ImageSelector', 'width=800,height=600');
+      
+      // Escuta mensagens da pop-up
+      window.addEventListener('message', (event) => {
+        const { imageId } = event.data;
+        if (imageId) {
+          document.getElementById(fieldId).value = imageId;
+        }
+      });
+    }
+
+    // Envio do formulário
+    document.getElementById('create-puzzle-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const title = formData.get('title');
+      const description = formData.get('description');
+      const icon = formData.get('icon');
+      const island = formData.get('island');
+
+      if (!title || !description || !icon || !island) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const puzzleData = {
+        title,
+        description,
+        icon,
+        island,
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/puzzles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(puzzleData),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert('Puzzle criado com sucesso!');
+          window.location.href = '/manage-puzzles.html';
+        } else {
+          alert(`Erro ao criar puzzle: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao criar puzzle:', error);
+        alert('Ocorreu um erro inesperado ao criar o puzzle.');
+      }
+    });
+
+    // Carrega as informações da ilha ao iniciar a página
+    loadIslands();
+  </script>
+</body>
+</html>

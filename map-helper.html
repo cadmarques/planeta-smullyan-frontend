@@ -24,7 +24,20 @@
       margin-top: 20px;
       text-align: left;
     }
+    .btn-clear {
+      margin-top: 20px;
+    }
   </style>
+  <script>
+    // Configuração de URLs dinâmicas
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://planeta-smullyan-backend.onrender.com/'; // Substitua pela URL do backend no Render
+
+    const FRONTEND_BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://cadmarques.github.io/planeta-smullyan-frontend'; // Substitua pela URL do GitHub Pages
+  </script>
 </head>
 <body>
   <div class="container text-center mt-5">
@@ -42,45 +55,115 @@
       <h4>Coordenadas Registradas:</h4>
       <ul id="coordinates-output"></ul>
     </div>
+
+    <!-- Botões de Ação -->
+    <button id="clear-button" class="btn btn-danger btn-clear">Limpar Pontos</button>
+    <button id="create-island-button" class="btn btn-success w-100 mt-3" disabled>Criar Ilha</button>
+
+    <!-- Mensagem de Feedback -->
+    <div id="message" class="mt-3"></div>
   </div>
 
   <!-- Script para Capturar o Clique -->
   <script>
-    // Variável para armazenar as coordenadas
-    const coordinates = [];
-  
+    // Variáveis globais
+    const coordinates = []; // Armazena as coordenadas clicadas
+    const output = document.getElementById('coordinates-output');
+    const clearButton = document.getElementById('clear-button');
+    const createIslandButton = document.getElementById('create-island-button');
+
     // Função para capturar o clique na imagem
     document.getElementById('map-image').addEventListener('click', function(event) {
       const img = event.target;
       const rect = img.getBoundingClientRect();
-  
+
       // Tamanho original da imagem (substitua pelos valores reais da sua imagem)
       const originalWidth = 1024; // Largura original da imagem em pixels
       const originalHeight = 768; // Altura original da imagem em pixels
-  
+
       // Calcular as coordenadas relativas à imagem
       const x = Math.round(event.clientX - rect.left);
       const y = Math.round(event.clientY - rect.top);
-  
+
       // Calcular as coordenadas normalizadas
       const normalizedX = (x / rect.width) * originalWidth;
       const normalizedY = (y / rect.height) * originalHeight;
-  
+
       // Arredondar para inteiros
       const roundedX = Math.round(normalizedX);
       const roundedY = Math.round(normalizedY);
-  
+
       // Adicionar as coordenadas à lista
       coordinates.push({ x: roundedX, y: roundedY });
-  
+
       // Atualizar a lista exibida na página
-      const output = document.getElementById('coordinates-output');
       const listItem = document.createElement('li');
       listItem.textContent = `(${roundedX}, ${roundedY})`;
       output.appendChild(listItem);
-  
+
+      // Habilitar o botão "Criar Ilha" se houver pelo menos um ponto
+      if (coordinates.length > 0) {
+        createIslandButton.disabled = false;
+      }
+
       // Exibir as coordenadas no console (para cópia fácil)
       console.log(`{ x: ${roundedX}, y: ${roundedY} }`);
+    });
+
+    // Função para limpar os pontos
+    clearButton.addEventListener('click', () => {
+      coordinates.length = 0; // Limpa a lista de coordenadas
+      output.innerHTML = ''; // Limpa a lista exibida na página
+      createIslandButton.disabled = true; // Desabilita o botão "Criar Ilha"
+    });
+
+    // Função para criar a ilha
+    createIslandButton.addEventListener('click', async () => {
+      try {
+        // Obter os dados da URL
+        const params = new URLSearchParams(window.location.search);
+        const name = params.get('name');
+        const description = params.get('description');
+        const banner = params.get('banner');
+
+        console.log('Name:', name); // Log para depuração
+        console.log('Description:', description); // Log para depuração
+        console.log('Banner:', banner); // Log para depuração
+
+        // Verificar se os dados estão presentes
+        if (!name || !description || !banner) {
+          alert('Dados incompletos para criar a ilha.');
+          return;
+        }
+
+        // Criar o objeto da ilha
+        const islandData = {
+          name,
+          description,
+          banner,
+          boundaries: coordinates,
+        };
+
+        console.log(islandData);
+
+        // Enviar os dados para o backend
+        const response = await fetch(`${API_BASE_URL}/api/islands`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(islandData),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert('Ilha criada com sucesso!');
+          window.location.href = '/manage-islands'; // Redireciona para a página de gerenciamento
+        } else {
+          alert(`Erro ao criar ilha: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao criar ilha:', error);
+        alert('Ocorreu um erro inesperado ao criar a ilha.');
+      }
     });
   </script>
 </body>
