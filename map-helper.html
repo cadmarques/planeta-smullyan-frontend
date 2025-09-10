@@ -156,7 +156,7 @@
         const result = await response.json();
         if (response.ok) {
           alert('Ilha criada com sucesso!');
-          window.location.href = '/manage-islands'; // Redireciona para a página de gerenciamento
+          window.location.href = 'manage-islands'; // Redireciona para a página de gerenciamento
         } else {
           alert(`Erro ao criar ilha: ${result.message}`);
         }

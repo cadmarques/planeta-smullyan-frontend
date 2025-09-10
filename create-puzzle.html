@@ -20,7 +20,7 @@
 <body class="bg-light">
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/manage-puzzles.html">Voltar a Gerir Puzzles</a>
+      <a class="navbar-brand" href="manage-puzzles.html">Voltar a Gerir Puzzles</a>
     </div>
   </nav>
 
@@ -63,7 +63,7 @@
 
         if (!selectedIslandId) {
           alert('ID da ilha não encontrado. Por favor, selecione uma ilha antes de criar o puzzle.');
-          window.location.href = '/manage-puzzles.html';
+          window.location.href = 'manage-puzzles.html';
           return;
         }
 
@@ -126,7 +126,7 @@
         const result = await response.json();
         if (response.ok) {
           alert('Puzzle criado com sucesso!');
-          window.location.href = '/manage-puzzles.html';
+          window.location.href = 'manage-puzzles.html';
         } else {
           alert(`Erro ao criar puzzle: ${result.message}`);
         }
